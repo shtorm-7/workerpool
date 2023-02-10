@@ -2,7 +2,10 @@ package pool
 
 import C "github.com/shtorm-7/workerpool/constant"
 
-type StartStopHandler func(workers []C.BaseWorker)
+type (
+	StartHandler func(workers []C.BaseWorker)
+	StopHandler  func(workers []C.BaseWorker)
+)
 
 func SequentialStart(workers []C.BaseWorker) {
 	for _, worker := range workers {

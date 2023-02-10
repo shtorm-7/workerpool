@@ -14,8 +14,8 @@ type Pool struct {
 
 	meta C.Meta
 
-	startHandler StartStopHandler
-	stopHandler  StartStopHandler
+	startHandler StartHandler
+	stopHandler  StopHandler
 
 	mtx sync.Mutex
 }

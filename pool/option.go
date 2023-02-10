@@ -10,13 +10,13 @@ type (
 	ResizablePoolOption func(pool *ResizablePool)
 )
 
-func WithStartHandler(startHandler StartStopHandler) PoolOption {
+func WithStartHandler(startHandler StartHandler) PoolOption {
 	return func(pool *Pool) {
 		pool.startHandler = startHandler
 	}
 }
 
-func WithStopHandler(stopHandler StartStopHandler) PoolOption {
+func WithStopHandler(stopHandler StopHandler) PoolOption {
 	return func(pool *Pool) {
 		pool.stopHandler = stopHandler
 	}
