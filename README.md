@@ -1,6 +1,8 @@
 
 # Workerpool
-[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
+[![Go Reference](https://pkg.go.dev/badge/github.com/shtorm-7/workerpool.svg)](https://pkg.go.dev/github.com/shtorm-7/workerpool)
+[![Go Report Card](https://goreportcard.com/badge/github.com/shtorm-7/workerpool)](https://goreportcard.com/report/github.com/shtorm-7/workerpool)
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/shtorm-7/workerpool/blob/main/LICENSE)
 
 Simple constructor of workerpools
 
