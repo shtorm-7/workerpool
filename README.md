@@ -198,7 +198,7 @@ func main() {
 		),
 	)
 	for taskResult := range chain.Batch(
-		100, generator.SequenceRange(0, 10),
+		10, generator.SequenceRange(0, 10),
 	) {
 		fmt.Println(taskResult.Result)
 	}
