@@ -185,15 +185,15 @@ func main() {
 	wp.Start()
 	chain := tools.NewChain(
 		tools.AddLink(
-			tools.NewLink[int](queue1,
-				func(value int) (string, error) {
+			tools.NewLink[string](queue1,
+				func(value int) (int, error) {
 					// your code
-					return "some result", nil
+					return value, nil
 				},
 			), queue2,
-			func(value string) (int, error) {
+			func(value int) (string, error) {
 				// your code
-				return 0, nil
+				return fmt.Sprintf("result: %d", value), nil
 			},
 		),
 	)
