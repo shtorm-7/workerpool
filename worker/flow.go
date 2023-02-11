@@ -2,42 +2,42 @@ package worker
 
 import C "github.com/shtorm-7/workerpool/constant"
 
-type Flow func(w *Worker)
+type Flow func(worker *Worker)
 
-func DefaultFlow(w *Worker) {
+func DefaultFlow(worker *Worker) {
 	for {
 		select {
-		case <-w.status.Await(C.Stopping):
+		case <-worker.status.Await(C.Stopping):
 			return
 		default:
 		}
 		select {
-		case task, ok := <-w.queue:
+		case task, ok := <-worker.queue:
 			if !ok {
 				panic("queue is closed")
 			}
-			w.processTask(task)
-		case <-w.status.Await(C.Stopping):
+			worker.processTask(task)
+		case <-worker.status.Await(C.Stopping):
 			return
 		}
 	}
 }
 
-func GracefulFlow(w *Worker) {
+func GracefulFlow(worker *Worker) {
 	for {
 		select {
-		case task, ok := <-w.queue:
+		case task, ok := <-worker.queue:
 			if !ok {
 				panic("queue is closed")
 			}
-			w.processTask(task)
-		case <-w.status.Await(C.Stopping):
+			worker.processTask(task)
+		case <-worker.status.Await(C.Stopping):
 			select {
-			case task, ok := <-w.queue:
+			case task, ok := <-worker.queue:
 				if !ok {
 					panic("queue is closed")
 				}
-				w.processTask(task)
+				worker.processTask(task)
 			default:
 				return
 			}
