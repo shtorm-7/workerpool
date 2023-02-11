@@ -28,7 +28,7 @@ func WithMeta(meta C.Meta) PoolOption {
 	}
 }
 
-func WithInitWorkerHandler(handler WorkerHandler) PoolOption {
+func WithPostInitWorkerHandler(handler WorkerHandler) PoolOption {
 	return func(pool *Pool) {
 		for _, worker := range pool.workers {
 			handler(worker)
