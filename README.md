@@ -65,10 +65,7 @@ import (
 func main() {
 	queue := make(constant.Queue, 10)
 	wp := pool.NewResizablePool(
-		worker.NewWorkerFactory(
-			queue,
-			worker.WithFlow(worker.GracefulFlow),
-		),
+		worker.NewWorkerFactory(queue),
 		10,
 	)
 	wp.Start()
@@ -99,10 +96,7 @@ import (
 func main() {
 	queue := make(constant.Queue, 10)
 	wp := pool.NewResizablePool(
-		worker.NewWorkerFactory(
-			queue,
-			worker.WithFlow(worker.GracefulFlow),
-		),
+		worker.NewWorkerFactory(queue),
 		10,
 	)
 	wp.Start()
@@ -136,15 +130,12 @@ import (
 func main() {
 	queue := make(constant.Queue, 10)
 	wp := pool.NewResizablePool(
-		worker.NewWorkerFactory(
-			queue,
-			worker.WithFlow(worker.GracefulFlow),
-		),
+		worker.NewWorkerFactory(queue),
 		10,
 	)
 	wp.Start()
 	chain := tools.NewChain(
-		tools.NewLink[string, string](
+		tools.NewLink[string](
 			queue,
 			func(value string) (string, error) {
 				// your code
@@ -182,17 +173,11 @@ func main() {
 	wp := pool.NewPool(
 		[]constant.WorkerFactory{
 			pool.NewResizablePoolFactory(
-				worker.NewWorkerFactory(
-					queue1,
-					worker.WithFlow(worker.GracefulFlow),
-				),
+				worker.NewWorkerFactory(queue1),
 				10,
 			),
 			pool.NewResizablePoolFactory(
-				worker.NewWorkerFactory(
-					queue2,
-					worker.WithFlow(worker.GracefulFlow),
-				),
+				worker.NewWorkerFactory(queue2),
 				10,
 			),
 		},
@@ -200,7 +185,7 @@ func main() {
 	wp.Start()
 	chain := tools.NewChain(
 		tools.AddLink(
-			tools.NewLink[int, int](queue1,
+			tools.NewLink[int](queue1,
 				func(value int) (string, error) {
 					// your code
 					return "some result", nil

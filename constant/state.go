@@ -1,6 +1,6 @@
 package constant
 
-type State int
+type State uint8
 
 const (
 	Pending State = iota

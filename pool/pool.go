@@ -10,20 +10,17 @@ import (
 type Pool struct {
 	workers []C.BaseWorker
 
+	startHandler StartHandler
+	stopHandler  StopHandler
+
 	status *callbackfield.CallbackField[C.Status]
 
 	meta C.Meta
 
-	startHandler StartHandler
-	stopHandler  StopHandler
-
 	mtx sync.Mutex
 }
 
-func NewPool(
-	factories []C.WorkerFactory,
-	opts ...PoolOption,
-) *Pool {
+func NewPool(factories []C.WorkerFactory, opts ...PoolOption) *Pool {
 	if len(factories) == 0 {
 		panic("factories cant be blank")
 	}
@@ -42,10 +39,7 @@ func NewPool(
 	return pool
 }
 
-func NewPoolFactory(
-	factories []C.WorkerFactory,
-	opts ...PoolOption,
-) C.WorkerFactory {
+func NewPoolFactory(factories []C.WorkerFactory, opts ...PoolOption) C.WorkerFactory {
 	return func() C.BaseWorker {
 		return NewPool(factories, opts...)
 	}

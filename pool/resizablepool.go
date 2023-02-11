@@ -12,15 +12,11 @@ type ResizablePool struct {
 
 	factory C.WorkerFactory
 
-	addWorkerHandlers    []WorkerHandler
-	removeWorkerHandlers []WorkerHandler
+	postAddWorkerHandlers    []WorkerHandler
+	postRemoveWorkerHandlers []WorkerHandler
 }
 
-func NewResizablePool(
-	factory C.WorkerFactory,
-	n int,
-	opts ...ResizablePoolOption,
-) *ResizablePool {
+func NewResizablePool(factory C.WorkerFactory, n int, opts ...ResizablePoolOption) *ResizablePool {
 	if n <= 0 {
 		panic(fmt.Sprintf("the value '%d' is not valid. the value must be greater than 0", n))
 	}
@@ -28,8 +24,8 @@ func NewResizablePool(
 		Pool: &Pool{
 			workers:      make([]C.BaseWorker, n),
 			status:       callbackfield.NewCallbackField[C.Status](),
-			startHandler: ConcurrentStart,
-			stopHandler:  ConcurrentStop,
+			startHandler: ParallelStart,
+			stopHandler:  ParallelStop,
 		},
 		factory: factory,
 	}
@@ -42,11 +38,7 @@ func NewResizablePool(
 	return pool
 }
 
-func NewResizablePoolFactory(
-	factory C.WorkerFactory,
-	n int,
-	opts ...ResizablePoolOption,
-) C.WorkerFactory {
+func NewResizablePoolFactory(factory C.WorkerFactory, n int, opts ...ResizablePoolOption) C.WorkerFactory {
 	return func() C.BaseWorker {
 		return NewResizablePool(factory, n, opts...)
 	}
@@ -60,10 +52,10 @@ func (p *ResizablePool) AddWorkers(n int) {
 	}
 	for i := 0; i < n; i++ {
 		worker := p.factory()
-		for _, handler := range p.addWorkerHandlers {
+		p.workers = append(p.workers, worker)
+		for _, handler := range p.postAddWorkerHandlers {
 			handler(worker)
 		}
-		p.workers = append(p.workers, worker)
 	}
 	if p.status.Get() == C.Started {
 		p.startHandler(p.workers[len(p.workers)-n:])
@@ -78,13 +70,14 @@ func (p *ResizablePool) RemoveWorkers(n int) {
 	} else if n > len(p.workers) {
 		panic(fmt.Sprintf("the value '%d' is not valid. the value must be less than length of current workers", n))
 	}
+	removingWorkers := p.workers[len(p.workers)-n:]
 	if p.status.Get() == C.Started {
-		p.stopHandler(p.workers[len(p.workers)-n:])
+		p.stopHandler(removingWorkers)
 	}
-	for _, worker := range p.workers[len(p.workers)-n:] {
-		for _, handler := range p.removeWorkerHandlers {
+	p.workers = p.workers[:len(p.workers)-n]
+	for _, worker := range removingWorkers {
+		for _, handler := range p.postRemoveWorkerHandlers {
 			handler(worker)
 		}
 	}
-	p.workers = p.workers[:len(p.workers)-n]
 }

@@ -44,14 +44,14 @@ func WithPoolOptions(opts ...PoolOption) ResizablePoolOption {
 	}
 }
 
-func WithAddWorkerHandler(handler WorkerHandler) ResizablePoolOption {
+func WithPostAddWorkerHandler(handler WorkerHandler) ResizablePoolOption {
 	return func(pool *ResizablePool) {
-		pool.addWorkerHandlers = append(pool.addWorkerHandlers, handler)
+		pool.postAddWorkerHandlers = append(pool.postAddWorkerHandlers, handler)
 	}
 }
 
-func WithRemoveWorkerHandler(handler WorkerHandler) ResizablePoolOption {
+func WithPostRemoveWorkerHandler(handler WorkerHandler) ResizablePoolOption {
 	return func(pool *ResizablePool) {
-		pool.removeWorkerHandlers = append(pool.removeWorkerHandlers, handler)
+		pool.postRemoveWorkerHandlers = append(pool.postRemoveWorkerHandlers, handler)
 	}
 }

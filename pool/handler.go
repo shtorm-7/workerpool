@@ -19,7 +19,7 @@ func SequentialStop(workers []C.BaseWorker) {
 	}
 }
 
-func ConcurrentStart(workers []C.BaseWorker) {
+func ParallelStart(workers []C.BaseWorker) {
 	for _, worker := range workers {
 		go worker.Start()
 	}
@@ -28,7 +28,7 @@ func ConcurrentStart(workers []C.BaseWorker) {
 	}
 }
 
-func ConcurrentStop(workers []C.BaseWorker) {
+func ParallelStop(workers []C.BaseWorker) {
 	for _, worker := range workers {
 		go worker.Stop()
 	}

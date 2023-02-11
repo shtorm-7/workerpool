@@ -1,6 +1,6 @@
 package generator
 
-func Repeat[V any](scheme Scheme[V], n int) Scheme[V] {
+func Repeated[V any](scheme Scheme[V], n int) Scheme[V] {
 	return func() Generator[V] {
 		generator := scheme()
 		i := 0

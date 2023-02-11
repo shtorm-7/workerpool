@@ -9,7 +9,8 @@ import (
 
 type Worker struct {
 	queue C.Queue
-	flow  Flow
+
+	flow Flow
 
 	status *callbackfield.CallbackField[C.Status]
 	state  *callbackfield.CallbackField[C.State]
@@ -19,10 +20,7 @@ type Worker struct {
 	mtx sync.Mutex
 }
 
-func NewWorker(
-	queue C.Queue,
-	opts ...WorkerOption,
-) *Worker {
+func NewWorker(queue C.Queue, opts ...WorkerOption) *Worker {
 	worker := &Worker{
 		queue:  queue,
 		flow:   DefaultFlow,
@@ -35,10 +33,7 @@ func NewWorker(
 	return worker
 }
 
-func NewWorkerFactory(
-	queue C.Queue,
-	opts ...WorkerOption,
-) C.WorkerFactory {
+func NewWorkerFactory(queue C.Queue, opts ...WorkerOption) C.WorkerFactory {
 	return func() C.BaseWorker {
 		return NewWorker(queue, opts...)
 	}

@@ -6,91 +6,117 @@ import (
 )
 
 type (
-	LinkingHandler[V, FR any] func(value V, finalResultHandler func(FR, error))
+	LinkingHandler[FR, V any] func(value V, finalResultHandler func(FR, error))
 
-	Chain[V, FR any] struct {
-		linkingHandler LinkingHandler[V, FR]
+	Chain[FR, V any] struct {
+		rootHandler LinkingHandler[FR, V]
 	}
 
-	Link[CV, CFR, V, R any] struct {
+	Link[CFR, CV, V, R any] struct {
 		queue C.Queue
 
-		handler            func(V) (R, error)
-		nextLinkingHandler LinkingHandler[R, CFR]
+		handler     func(V) (R, error)
+		nextHandler LinkingHandler[CFR, R]
 
-		chain *Chain[CV, CFR]
+		chain *Chain[CFR, CV]
 	}
 )
 
-func NewChain[CV, CFR, V any](link *Link[CV, CFR, V, CFR]) *Chain[CV, CFR] {
-	link.nextLinkingHandler = func(value CFR, finalResultHandler func(CFR, error)) {
+func NewChain[CFR, CV, V any](link *Link[CFR, CV, V, CFR]) *Chain[CFR, CV] {
+	link.nextHandler = func(value CFR, finalResultHandler func(CFR, error)) {
 		finalResultHandler(value, nil)
 	}
 	return link.chain
 }
 
-func NewLink[CV, CFR, LR any](queue C.Queue, handler func(CV) (LR, error)) *Link[CV, CFR, CV, LR] {
-	link := &Link[CV, CFR, CV, LR]{
+func NewLink[CFR, CV, LR any](queue C.Queue, handler func(CV) (LR, error)) *Link[CFR, CV, CV, LR] {
+	link := &Link[CFR, CV, CV, LR]{
 		queue:   queue,
 		handler: handler,
-		chain:   new(Chain[CV, CFR]),
+		chain:   new(Chain[CFR, CV]),
 	}
-	link.chain.linkingHandler = link.linkingHandler()
+	link.chain.rootHandler = link.linkingHandler()
 	return link
 }
 
-func AddLink[CV, CFR, V, PR, R any](previousLink *Link[CV, CFR, V, PR], queue C.Queue, handler func(PR) (R, error)) *Link[CV, CFR, PR, R] {
-	link := &Link[CV, CFR, PR, R]{
+func AddLink[CFR, CV, V, PR, R any](previousLink *Link[CFR, CV, V, PR], queue C.Queue, handler func(PR) (R, error)) *Link[CFR, CV, PR, R] {
+	link := &Link[CFR, CV, PR, R]{
 		queue:   queue,
 		handler: handler,
 		chain:   previousLink.chain,
 	}
-	previousLink.nextLinkingHandler = link.linkingHandler()
+	previousLink.nextHandler = link.linkingHandler()
 	return link
 }
 
-func (ch Chain[V, FR]) AwaitBatch(values generator.Scheme[V]) <-chan struct{} {
+func (ch Chain[FR, V]) Await(value V) <-chan struct{} {
 	await := make(chan struct{})
 	go func() {
-		state := int32(1)
-		finalResultHandler := func(FR, error) {
-			atomicDecrementAndCloseIfZero(&state, await)
-		}
-		values.Process(
-			func(value V) {
-				atomicIncrement(&state)
-				ch.linkingHandler(value, finalResultHandler)
+		ch.rootHandler(
+			value,
+			func(FR, error) {
+				close(await)
 			},
 		)
-		atomicDecrementAndCloseIfZero(&state, await)
 	}()
 	return await
 }
 
-func (ch Chain[V, FR]) Batch(resultsSize int, values generator.Scheme[V]) <-chan TaskResult[FR] {
-	results := make(chan TaskResult[FR], resultsSize)
+func (ch Chain[FR, V]) Future(value V) <-chan TaskResult[FR] {
+	results := make(chan TaskResult[FR])
 	go func() {
-		state := int32(1)
-		finalResultHandler := func(finalResult FR, err error) {
-			results <- TaskResult[FR]{finalResult, err}
-			atomicDecrementAndCloseIfZero(&state, results)
-		}
-		values.Process(
-			func(value V) {
-				atomicIncrement(&state)
-				ch.linkingHandler(value, finalResultHandler)
+		ch.rootHandler(
+			value,
+			func(finalResult FR, err error) {
+				results <- TaskResult[FR]{finalResult, err}
 			},
 		)
-		atomicDecrementAndCloseIfZero(&state, results)
 	}()
 	return results
 }
 
-func (link *Link[CV, CFR, V, R]) linkingHandler() LinkingHandler[V, CFR] {
+func (ch Chain[FR, V]) AwaitBatch(values generator.Scheme[V]) <-chan struct{} {
+	await := make(chan struct{})
+	go func() {
+		state := newOnceState(await)
+		finalResultHandler := func(FR, error) {
+			state.Done()
+		}
+		values.Process(
+			func(value V) {
+				state.Add(1)
+				ch.rootHandler(value, finalResultHandler)
+			},
+		)
+		state.Done()
+	}()
+	return await
+}
+
+func (ch Chain[FR, V]) Batch(resultsSize int, values generator.Scheme[V]) <-chan TaskResult[FR] {
+	results := make(chan TaskResult[FR], resultsSize)
+	go func() {
+		state := newOnceState(results)
+		finalResultHandler := func(finalResult FR, err error) {
+			results <- TaskResult[FR]{finalResult, err}
+			state.Done()
+		}
+		values.Process(
+			func(value V) {
+				state.Add(1)
+				ch.rootHandler(value, finalResultHandler)
+			},
+		)
+		state.Done()
+	}()
+	return results
+}
+
+func (link *Link[CFR, CV, V, R]) linkingHandler() LinkingHandler[CFR, V] {
 	return func(value V, finalResultHandler func(CFR, error)) {
 		link.queue <- func() {
 			if result, err := link.handler(value); err == nil {
-				link.nextLinkingHandler(result, finalResultHandler)
+				link.nextHandler(result, finalResultHandler)
 			} else {
 				finalResultHandler(*new(CFR), err)
 			}

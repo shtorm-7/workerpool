@@ -8,17 +8,17 @@ import (
 func AwaitBatch(queue C.Queue, tasks generator.Scheme[func()]) <-chan struct{} {
 	await := make(chan struct{})
 	go func() {
-		state := int32(1)
+		state := newOnceState(await)
 		tasks.Process(
 			func(task func()) {
-				atomicIncrement(&state)
+				state.Add(1)
 				queue <- func() {
 					task()
-					atomicDecrementAndCloseIfZero(&state, await)
+					state.Done()
 				}
 			},
 		)
-		atomicDecrementAndCloseIfZero(&state, await)
+		state.Done()
 	}()
 	return await
 }
@@ -26,18 +26,18 @@ func AwaitBatch(queue C.Queue, tasks generator.Scheme[func()]) <-chan struct{} {
 func Batch[R any](queue C.Queue, resultsSize int, tasks generator.Scheme[func() (R, error)]) <-chan TaskResult[R] {
 	results := make(chan TaskResult[R], resultsSize)
 	go func() {
-		state := int32(1)
+		state := newOnceState(results)
 		tasks.Process(
 			func(task func() (R, error)) {
-				atomicIncrement(&state)
+				state.Add(1)
 				queue <- func() {
 					result, err := task()
 					results <- TaskResult[R]{result, err}
-					atomicDecrementAndCloseIfZero(&state, results)
+					state.Done()
 				}
 			},
 		)
-		atomicDecrementAndCloseIfZero(&state, results)
+		state.Done()
 	}()
 	return results
 }

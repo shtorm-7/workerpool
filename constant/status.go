@@ -1,6 +1,6 @@
 package constant
 
-type Status int
+type Status uint8
 
 const (
 	Stopped Status = iota
