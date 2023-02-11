@@ -32,7 +32,6 @@ func (m *RWMutex) Lock() {
 	await := m.awaitWaiter(false)
 	m.mtx.Unlock()
 	<-await
-
 }
 
 func (m *RWMutex) RLock() {
@@ -89,7 +88,7 @@ func (m *RWMutex) RUnlockToLock() {
 		m.mtx.Unlock()
 		return
 	}
-	await := m.awaitPriorityWaiter()
+	await := m.awaitPriorityLockWaiter()
 	m.locks--
 	if m.locks == 0 {
 		m.notifyWaiters()
@@ -134,7 +133,7 @@ func (m *RWMutex) awaitWaiter(rLock bool) <-chan struct{} {
 	return waiter.await
 }
 
-func (m *RWMutex) awaitPriorityWaiter() <-chan struct{} {
+func (m *RWMutex) awaitPriorityLockWaiter() <-chan struct{} {
 	waiter := waiter{
 		await: make(chan struct{}),
 	}
