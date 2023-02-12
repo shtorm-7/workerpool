@@ -49,7 +49,7 @@ func AddLink[CFR, CV, V, PR, R any](previousLink *Link[CFR, CV, V, PR], queue C.
 	return link
 }
 
-func (ch Chain[FR, V]) Await(value V) <-chan struct{} {
+func (ch *Chain[FR, V]) Await(value V) <-chan struct{} {
 	await := make(chan struct{})
 	go func() {
 		ch.rootHandler(
@@ -62,7 +62,7 @@ func (ch Chain[FR, V]) Await(value V) <-chan struct{} {
 	return await
 }
 
-func (ch Chain[FR, V]) Future(value V) <-chan TaskResult[FR] {
+func (ch *Chain[FR, V]) Future(value V) <-chan TaskResult[FR] {
 	results := make(chan TaskResult[FR])
 	go func() {
 		ch.rootHandler(
@@ -75,7 +75,7 @@ func (ch Chain[FR, V]) Future(value V) <-chan TaskResult[FR] {
 	return results
 }
 
-func (ch Chain[FR, V]) AwaitBatch(values generator.Scheme[V]) <-chan struct{} {
+func (ch *Chain[FR, V]) AwaitBatch(values generator.Scheme[V]) <-chan struct{} {
 	await := make(chan struct{})
 	go func() {
 		state := newOnceState(await)
@@ -93,7 +93,7 @@ func (ch Chain[FR, V]) AwaitBatch(values generator.Scheme[V]) <-chan struct{} {
 	return await
 }
 
-func (ch Chain[FR, V]) Batch(resultsSize int, values generator.Scheme[V]) <-chan TaskResult[FR] {
+func (ch *Chain[FR, V]) Batch(resultsSize int, values generator.Scheme[V]) <-chan TaskResult[FR] {
 	results := make(chan TaskResult[FR], resultsSize)
 	go func() {
 		state := newOnceState(results)
