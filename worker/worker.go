@@ -20,7 +20,7 @@ type Worker struct {
 	mtx sync.Mutex
 }
 
-func NewWorker(queue C.Queue, opts ...WorkerOption) *Worker {
+func NewWorker(queue C.Queue, opts ...WorkerOption) C.Worker {
 	worker := &Worker{
 		queue:  queue,
 		flow:   DefaultFlow,
@@ -62,11 +62,11 @@ func (w *Worker) Stop() {
 	}
 }
 
-func (w *Worker) Status() *callbackfield.CallbackField[C.Status] {
+func (w *Worker) Status() callbackfield.ReadOnlyCallbackField[C.Status] {
 	return w.status
 }
 
-func (w *Worker) State() *callbackfield.CallbackField[C.State] {
+func (w *Worker) State() callbackfield.ReadOnlyCallbackField[C.State] {
 	return w.state
 }
 

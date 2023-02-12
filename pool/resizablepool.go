@@ -16,7 +16,7 @@ type ResizablePool struct {
 	postRemoveWorkerHandlers []WorkerHandler
 }
 
-func NewResizablePool(factory C.WorkerFactory, n int, opts ...ResizablePoolOption) *ResizablePool {
+func NewResizablePool(factory C.WorkerFactory, n int, opts ...ResizablePoolOption) C.ResizablePool {
 	if n <= 0 {
 		panic(fmt.Sprintf("the value '%d' is not valid. the value must be greater than 0", n))
 	}

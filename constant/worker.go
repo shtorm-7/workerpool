@@ -8,6 +8,6 @@ type (
 	Worker interface {
 		BaseWorker
 
-		State() *callbackfield.CallbackField[State]
+		State() callbackfield.ReadOnlyCallbackField[State]
 	}
 )

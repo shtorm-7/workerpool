@@ -20,7 +20,7 @@ type Pool struct {
 	mtx sync.Mutex
 }
 
-func NewPool(factories []C.WorkerFactory, opts ...PoolOption) *Pool {
+func NewPool(factories []C.WorkerFactory, opts ...PoolOption) C.Pool {
 	if len(factories) == 0 {
 		panic("factories cant be blank")
 	}
@@ -65,7 +65,7 @@ func (p *Pool) Stop() {
 	}
 }
 
-func (p *Pool) Status() *callbackfield.CallbackField[C.Status] {
+func (p *Pool) Status() callbackfield.ReadOnlyCallbackField[C.Status] {
 	return p.status
 }
 

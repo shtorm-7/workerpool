@@ -6,7 +6,7 @@ type (
 	BaseWorker interface {
 		Start()
 		Stop()
-		Status() *callbackfield.CallbackField[Status]
+		Status() callbackfield.ReadOnlyCallbackField[Status]
 		Meta() Meta
 	}
 

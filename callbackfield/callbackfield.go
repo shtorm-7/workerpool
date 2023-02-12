@@ -21,6 +21,14 @@ type (
 
 		mtx RWMutex
 	}
+
+	ReadOnlyCallbackField[T comparable] interface {
+		Get() T
+		Await(values ...T) <-chan struct{}
+		AddCallback(value T, callback Callback)
+		AddOnceCallback(value T, callback Callback)
+		AddAnyCallback(callback Callback)
+	}
 )
 
 func NewCallbackField[T comparable](opts ...CallbackFieldOption[T]) *CallbackField[T] {
