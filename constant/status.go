@@ -10,5 +10,5 @@ const (
 )
 
 func (s Status) String() string {
-	return [...]string{"stopped", "starting", "started", "stopping", "resizing"}[s]
+	return [...]string{"stopped", "starting", "started", "stopping"}[s]
 }

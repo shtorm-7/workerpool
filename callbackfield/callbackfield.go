@@ -3,17 +3,17 @@ package callbackfield
 type (
 	Callback func()
 
-	OrChannel[T comparable] struct {
+	OrAwait[T comparable] struct {
 		values []T
-		ch     chan struct{}
+		await  chan struct{}
 	}
 
 	CallbackField[T comparable] struct {
 		value T
 
-		channel    chan struct{}
-		channels   map[T]chan struct{}
-		orChannels []OrChannel[T]
+		anyAwait chan struct{}
+		awaits   map[T]chan struct{}
+		orAwaits []OrAwait[T]
 
 		callbacks     map[T][]Callback
 		onceCallbacks map[T][]Callback
@@ -25,7 +25,7 @@ type (
 
 func NewCallbackField[T comparable](opts ...CallbackFieldOption[T]) *CallbackField[T] {
 	field := &CallbackField[T]{
-		channels: make(map[T]chan struct{}),
+		awaits: make(map[T]chan struct{}),
 
 		callbacks:     make(map[T][]Callback),
 		onceCallbacks: make(map[T][]Callback),
@@ -59,10 +59,10 @@ func (cf *CallbackField[T]) Await(values ...T) <-chan struct{} {
 	if len(values) == 0 {
 		cf.mtx.RUnlockToLock()
 		defer cf.mtx.Unlock()
-		if cf.channel == nil {
-			cf.channel = make(chan struct{})
+		if cf.anyAwait == nil {
+			cf.anyAwait = make(chan struct{})
 		}
-		return cf.channel
+		return cf.anyAwait
 	} else if len(values) == 1 {
 		value := values[0]
 		if value == cf.value {
@@ -71,10 +71,12 @@ func (cf *CallbackField[T]) Await(values ...T) <-chan struct{} {
 		}
 		cf.mtx.RUnlockToLock()
 		defer cf.mtx.Unlock()
-		if _, ok := cf.channels[value]; !ok {
-			cf.channels[value] = make(chan struct{})
+		if await, ok := cf.awaits[value]; ok {
+			return await
 		}
-		return cf.channels[value]
+		await := make(chan struct{})
+		cf.awaits[value] = await
+		return await
 	} else {
 		for _, value := range values {
 			if value == cf.value {
@@ -84,9 +86,9 @@ func (cf *CallbackField[T]) Await(values ...T) <-chan struct{} {
 		}
 		cf.mtx.RUnlockToLock()
 		defer cf.mtx.Unlock()
-		orChannel := OrChannel[T]{values, make(chan struct{})}
-		cf.orChannels = append(cf.orChannels, orChannel)
-		return orChannel.ch
+		orAwait := OrAwait[T]{values, make(chan struct{})}
+		cf.orAwaits = append(cf.orAwaits, orAwait)
+		return orAwait.await
 	}
 }
 
@@ -109,19 +111,19 @@ func (cf *CallbackField[T]) AddAnyCallback(callback Callback) {
 }
 
 func (cf *CallbackField[T]) callback() {
-	if cf.channel != nil {
-		close(cf.channel)
-		cf.channel = nil
+	if cf.anyAwait != nil {
+		close(cf.anyAwait)
+		cf.anyAwait = nil
 	}
-	if ch, ok := cf.channels[cf.value]; ok {
-		close(ch)
-		delete(cf.channels, cf.value)
+	if await, ok := cf.awaits[cf.value]; ok {
+		close(await)
+		delete(cf.awaits, cf.value)
 	}
-	for i, orChannel := range cf.orChannels {
-		for _, orValue := range orChannel.values {
+	for i, orAwait := range cf.orAwaits {
+		for _, orValue := range orAwait.values {
 			if orValue == cf.value {
-				close(orChannel.ch)
-				cf.orChannels = append(cf.orChannels[:i], cf.orChannels[i+1:]...)
+				close(orAwait.await)
+				cf.orAwaits = append(cf.orAwaits[:i], cf.orAwaits[i+1:]...)
 			}
 		}
 	}
