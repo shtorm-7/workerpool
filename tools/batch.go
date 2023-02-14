@@ -5,7 +5,7 @@ import (
 	"github.com/shtorm-7/workerpool/generator"
 )
 
-func AwaitBatch(queue C.Queue, tasks generator.Scheme[func()]) <-chan struct{} {
+func AwaitBatch(queue C.Queue, tasks generator.Generator[func()]) <-chan struct{} {
 	await := make(chan struct{})
 	go func() {
 		state := newOnceState(await)
@@ -23,7 +23,7 @@ func AwaitBatch(queue C.Queue, tasks generator.Scheme[func()]) <-chan struct{} {
 	return await
 }
 
-func Batch[R any](queue C.Queue, resultsSize int, tasks generator.Scheme[func() (R, error)]) <-chan TaskResult[R] {
+func Batch[R any](queue C.Queue, resultsSize int, tasks generator.Generator[func() (R, error)]) <-chan TaskResult[R] {
 	results := make(chan TaskResult[R], resultsSize)
 	go func() {
 		state := newOnceState(results)

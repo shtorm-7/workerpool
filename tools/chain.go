@@ -75,7 +75,7 @@ func (ch *Chain[FR, V]) Future(value V) <-chan TaskResult[FR] {
 	return results
 }
 
-func (ch *Chain[FR, V]) AwaitBatch(values generator.Scheme[V]) <-chan struct{} {
+func (ch *Chain[FR, V]) AwaitBatch(values generator.Generator[V]) <-chan struct{} {
 	await := make(chan struct{})
 	go func() {
 		state := newOnceState(await)
@@ -93,7 +93,7 @@ func (ch *Chain[FR, V]) AwaitBatch(values generator.Scheme[V]) <-chan struct{} {
 	return await
 }
 
-func (ch *Chain[FR, V]) Batch(resultsSize int, values generator.Scheme[V]) <-chan TaskResult[FR] {
+func (ch *Chain[FR, V]) Batch(resultsSize int, values generator.Generator[V]) <-chan TaskResult[FR] {
 	results := make(chan TaskResult[FR], resultsSize)
 	go func() {
 		state := newOnceState(results)

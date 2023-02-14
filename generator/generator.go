@@ -1,22 +1,20 @@
 package generator
 
 type (
-	Generator[V any] func() (value V, ok bool)
+	Next[V any] func() (value V, ok bool)
 
-	Scheme[V any] func() Generator[V]
+	Generator[V any] Next[V]
 )
 
-func (sc Scheme[V]) Process(handler func(V)) {
-	generator := sc()
-	for value, ok := generator(); ok; value, ok = generator() {
+func (g Generator[V]) Process(handler func(V)) {
+	for value, ok := g(); ok; value, ok = g() {
 		handler(value)
 	}
 }
 
-func (sc Scheme[V]) ToSlice() []V {
-	generator := sc()
+func (g Generator[V]) ToSlice() []V {
 	result := make([]V, 0)
-	for value, ok := generator(); ok; value, ok = generator() {
+	for value, ok := g(); ok; value, ok = g() {
 		result = append(result, value)
 	}
 	return result
