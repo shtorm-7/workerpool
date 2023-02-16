@@ -68,16 +68,16 @@ func (ch *Chain[FR, V]) Await(value V) <-chan struct{} {
 }
 
 func (ch *Chain[FR, V]) Future(value V) <-chan ChainResult[FR] {
-	results := make(chan ChainResult[FR])
+	result := make(chan ChainResult[FR])
 	go func() {
 		ch.rootHandler(
 			value,
 			func(finalResult FR, err error) {
-				results <- ChainResult[FR]{finalResult, err}
+				result <- ChainResult[FR]{finalResult, err}
 			},
 		)
 	}()
-	return results
+	return result
 }
 
 func (ch *Chain[FR, V]) AwaitBatch(values generator.Generator[V]) <-chan struct{} {
