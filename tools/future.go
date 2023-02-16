@@ -6,41 +6,38 @@ import (
 	C "github.com/shtorm-7/workerpool/constant"
 )
 
-func Future[R any](queue C.Queue, task func() (R, error)) <-chan TaskResult[R] {
-	results := make(chan TaskResult[R])
+func Future[R any](queue C.Queue, task func() R) <-chan R {
+	result := make(chan R)
 	go func() {
 		queue <- func() {
-			result, err := task()
-			results <- TaskResult[R]{result, err}
-			close(results)
+			result <- task()
+			close(result)
 		}
 	}()
-	return results
+	return result
 }
 
-func TryFuture[R any](queue C.Queue, task func() (R, error)) (<-chan TaskResult[R], bool) {
-	results := make(chan TaskResult[R])
+func TryFuture[R any](queue C.Queue, task func() R) (<-chan R, bool) {
+	result := make(chan R)
 	select {
 	case queue <- func() {
-		result, err := task()
-		results <- TaskResult[R]{result, err}
-		close(results)
+		result <- task()
+		close(result)
 	}:
-		return results, true
+		return result, true
 	default:
 		return nil, false
 	}
 }
 
-func TryFutureWithTimeout[R any](queue C.Queue, task func() (R, error), timeout time.Duration) (<-chan TaskResult[R], bool) {
-	results := make(chan TaskResult[R])
+func TryFutureWithTimeout[R any](queue C.Queue, task func() R, timeout time.Duration) (<-chan R, bool) {
+	result := make(chan R)
 	select {
 	case queue <- func() {
-		result, err := task()
-		results <- TaskResult[R]{result, err}
-		close(results)
+		result <- task()
+		close(result)
 	}:
-		return results, true
+		return result, true
 	case <-time.After(timeout):
 		return nil, false
 	}

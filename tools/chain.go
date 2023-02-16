@@ -6,6 +6,11 @@ import (
 )
 
 type (
+	ChainResult[FR any] struct {
+		Result FR
+		Err    error
+	}
+
 	LinkingHandler[FR, V any] func(value V, finalResultHandler func(FR, error))
 
 	Chain[FR, V any] struct {
@@ -62,13 +67,13 @@ func (ch *Chain[FR, V]) Await(value V) <-chan struct{} {
 	return await
 }
 
-func (ch *Chain[FR, V]) Future(value V) <-chan TaskResult[FR] {
-	results := make(chan TaskResult[FR])
+func (ch *Chain[FR, V]) Future(value V) <-chan ChainResult[FR] {
+	results := make(chan ChainResult[FR])
 	go func() {
 		ch.rootHandler(
 			value,
 			func(finalResult FR, err error) {
-				results <- TaskResult[FR]{finalResult, err}
+				results <- ChainResult[FR]{finalResult, err}
 			},
 		)
 	}()
@@ -79,6 +84,7 @@ func (ch *Chain[FR, V]) AwaitBatch(values generator.Generator[V]) <-chan struct{
 	await := make(chan struct{})
 	go func() {
 		state := newOnceState(await)
+		defer state.Done()
 		finalResultHandler := func(FR, error) {
 			state.Done()
 		}
@@ -88,17 +94,17 @@ func (ch *Chain[FR, V]) AwaitBatch(values generator.Generator[V]) <-chan struct{
 				ch.rootHandler(value, finalResultHandler)
 			},
 		)
-		state.Done()
 	}()
 	return await
 }
 
-func (ch *Chain[FR, V]) Batch(resultsSize int, values generator.Generator[V]) <-chan TaskResult[FR] {
-	results := make(chan TaskResult[FR], resultsSize)
+func (ch *Chain[FR, V]) Batch(resultsSize int, values generator.Generator[V]) <-chan ChainResult[FR] {
+	results := make(chan ChainResult[FR], resultsSize)
 	go func() {
 		state := newOnceState(results)
+		defer state.Done()
 		finalResultHandler := func(finalResult FR, err error) {
-			results <- TaskResult[FR]{finalResult, err}
+			results <- ChainResult[FR]{finalResult, err}
 			state.Done()
 		}
 		values.Process(
@@ -107,7 +113,6 @@ func (ch *Chain[FR, V]) Batch(resultsSize int, values generator.Generator[V]) <-
 				ch.rootHandler(value, finalResultHandler)
 			},
 		)
-		state.Done()
 	}()
 	return results
 }
