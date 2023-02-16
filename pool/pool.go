@@ -69,6 +69,10 @@ func (p *Pool) Status() callbackfield.ReadOnlyCallbackField[C.Status] {
 	return p.status
 }
 
+func (p *Pool) Workers() []C.BaseWorker {
+	return p.workers
+}
+
 func (p *Pool) Metrics() C.Metrics {
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
