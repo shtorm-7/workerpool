@@ -15,7 +15,7 @@ type Worker struct {
 	status *callbackfield.CallbackField[C.Status]
 	state  *callbackfield.CallbackField[C.State]
 
-	meta C.Meta
+	metricHandlers []C.MetricHandler
 
 	mtx sync.Mutex
 }
@@ -70,13 +70,20 @@ func (w *Worker) State() callbackfield.ReadOnlyCallbackField[C.State] {
 	return w.state
 }
 
-func (w *Worker) Meta() C.Meta {
-	return w.meta
+func (w *Worker) Metrics() C.Metrics {
+	w.mtx.Lock()
+	defer w.mtx.Unlock()
+	metrics := make(C.Metrics, len(w.metricHandlers))
+	for _, handler := range w.metricHandlers {
+		metricName, metric := handler()
+		metrics[metricName] = metric
+	}
+	return metrics
 }
 
 func (w *Worker) processTask(task func()) {
 	w.state.Set(C.Received)
 	task()
-	w.state.Set(C.Succeeded)
+	w.state.Set(C.Complete)
 	w.state.Set(C.Pending)
 }

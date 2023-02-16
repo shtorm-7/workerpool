@@ -15,7 +15,7 @@ type Pool struct {
 
 	status *callbackfield.CallbackField[C.Status]
 
-	meta C.Meta
+	metricHandlers []C.MetricHandler
 
 	mtx sync.Mutex
 }
@@ -69,10 +69,18 @@ func (p *Pool) Status() callbackfield.ReadOnlyCallbackField[C.Status] {
 	return p.status
 }
 
-func (p *Pool) Workers() []C.BaseWorker {
-	return p.workers
-}
-
-func (p *Pool) Meta() C.Meta {
-	return p.meta
+func (p *Pool) Metrics() C.Metrics {
+	p.mtx.Lock()
+	defer p.mtx.Unlock()
+	metrics := make(C.Metrics, len(p.metricHandlers)+1)
+	for _, handler := range p.metricHandlers {
+		metricName, metric := handler()
+		metrics[metricName] = metric
+	}
+	workerMetrics := make([]C.Metrics, len(p.workers))
+	for i, worker := range p.workers {
+		workerMetrics[i] = worker.Metrics()
+	}
+	metrics["workers"] = workerMetrics
+	return metrics
 }

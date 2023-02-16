@@ -13,7 +13,7 @@ Install the package with:
 ```bash
 go get github.com/shtorm-7/workerpool
 ```
-    
+
 ## Examples
 
 Simple example usage of a workerpool:
@@ -100,14 +100,14 @@ func main() {
 		10,
 	)
 	wp.Start()
-	taskResult := <-tools.Future(
+	result := <-tools.Future(
 		queue,
-		func() (string, error) {
+		func() string {
 			// your code
-			return "some result", nil
+			return "some result"
 		},
 	)
-	fmt.Println(taskResult.Result, taskResult.Err)
+	fmt.Println(result)
 	wp.Stop()
 }
 ```
@@ -143,10 +143,10 @@ func main() {
 			},
 		),
 	)
-	for taskResult := range chain.Batch(
+	for chainResult := range chain.Batch(
 		10, generator.Range([]string{"first value", "second value"}),
 	) {
-		fmt.Println(taskResult.Result)
+		fmt.Println(chainResult.Result)
 	}
 	wp.Stop()
 }
@@ -197,10 +197,10 @@ func main() {
 			},
 		),
 	)
-	for taskResult := range chain.Batch(
+	for chainResult := range chain.Batch(
 		10, generator.SequenceRange(0, 10),
 	) {
-		fmt.Println(taskResult.Result)
+		fmt.Println(chainResult.Result)
 	}
 	wp.Stop()
 }
@@ -210,7 +210,6 @@ func main() {
 
 * Publish stable release
 * Add tests
-* Add logger
 * Add more documentation
 
 ## License

@@ -3,7 +3,7 @@ package pool
 import C "github.com/shtorm-7/workerpool/constant"
 
 type (
-	WorkerHandler func(worker C.BaseWorker)
+	WorkersHandler func(workers []C.BaseWorker)
 
 	PoolOption func(pool *Pool)
 
@@ -22,16 +22,18 @@ func WithStopHandler(stopHandler StopHandler) PoolOption {
 	}
 }
 
-func WithMeta(meta C.Meta) PoolOption {
+func WithMetrics(factories ...C.MetricHandlerFactory[C.Pool]) PoolOption {
 	return func(pool *Pool) {
-		pool.meta = meta
+		for _, factory := range factories {
+			pool.metricHandlers = append(pool.metricHandlers, factory(pool))
+		}
 	}
 }
 
-func WithPostInitWorkerHandler(handler WorkerHandler) PoolOption {
+func WithPostInitHandlers(handlers ...WorkersHandler) PoolOption {
 	return func(pool *Pool) {
-		for _, worker := range pool.workers {
-			handler(worker)
+		for _, handler := range handlers {
+			handler(pool.workers)
 		}
 	}
 }
@@ -44,14 +46,14 @@ func WithPoolOptions(opts ...PoolOption) ResizablePoolOption {
 	}
 }
 
-func WithPostAddWorkerHandler(handler WorkerHandler) ResizablePoolOption {
+func WithPostAddHandlers(handlers ...WorkersHandler) ResizablePoolOption {
 	return func(pool *ResizablePool) {
-		pool.postAddWorkerHandlers = append(pool.postAddWorkerHandlers, handler)
+		pool.postAddHandlers = append(pool.postAddHandlers, handlers...)
 	}
 }
 
-func WithPostRemoveWorkerHandler(handler WorkerHandler) ResizablePoolOption {
+func WithPostRemoveHandlers(handlers ...WorkersHandler) ResizablePoolOption {
 	return func(pool *ResizablePool) {
-		pool.postRemoveWorkerHandlers = append(pool.postRemoveWorkerHandlers, handler)
+		pool.postRemoveHandlers = append(pool.postRemoveHandlers, handlers...)
 	}
 }

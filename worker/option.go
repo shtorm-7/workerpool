@@ -10,8 +10,10 @@ func WithFlow(flow Flow) WorkerOption {
 	}
 }
 
-func WithMeta(meta C.Meta) WorkerOption {
+func WithMetrics(factories ...C.MetricHandlerFactory[C.Worker]) WorkerOption {
 	return func(worker *Worker) {
-		worker.meta = meta
+		for _, factory := range factories {
+			worker.metricHandlers = append(worker.metricHandlers, factory(worker))
+		}
 	}
 }

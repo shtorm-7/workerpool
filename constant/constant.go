@@ -7,7 +7,7 @@ type (
 		Start()
 		Stop()
 		Status() callbackfield.ReadOnlyCallbackField[Status]
-		Meta() Meta
+		Metrics() Metrics
 	}
 
 	WorkerFactory func() BaseWorker
