@@ -84,7 +84,6 @@ func (ch *Chain[FR, V]) AwaitBatch(values generator.Generator[V]) <-chan struct{
 	await := make(chan struct{})
 	go func() {
 		state := newOnceState(await)
-		defer state.Done()
 		finalResultHandler := func(FR, error) {
 			state.Done()
 		}
@@ -94,6 +93,7 @@ func (ch *Chain[FR, V]) AwaitBatch(values generator.Generator[V]) <-chan struct{
 				ch.rootHandler(value, finalResultHandler)
 			},
 		)
+		state.Done()
 	}()
 	return await
 }
@@ -102,7 +102,6 @@ func (ch *Chain[FR, V]) Batch(resultsSize int, values generator.Generator[V]) <-
 	results := make(chan ChainResult[FR], resultsSize)
 	go func() {
 		state := newOnceState(results)
-		defer state.Done()
 		finalResultHandler := func(finalResult FR, err error) {
 			results <- ChainResult[FR]{finalResult, err}
 			state.Done()
@@ -113,6 +112,7 @@ func (ch *Chain[FR, V]) Batch(resultsSize int, values generator.Generator[V]) <-
 				ch.rootHandler(value, finalResultHandler)
 			},
 		)
+		state.Done()
 	}()
 	return results
 }

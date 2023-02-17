@@ -9,7 +9,6 @@ func AwaitBatch(queue C.Queue, tasks generator.Generator[func()]) <-chan struct{
 	await := make(chan struct{})
 	go func() {
 		state := newOnceState(await)
-		defer state.Done()
 		tasks.Process(
 			func(task func()) {
 				state.Add(1)
@@ -19,6 +18,7 @@ func AwaitBatch(queue C.Queue, tasks generator.Generator[func()]) <-chan struct{
 				}
 			},
 		)
+		state.Done()
 	}()
 	return await
 }
@@ -27,7 +27,6 @@ func Batch[R any](queue C.Queue, resultsSize int, tasks generator.Generator[func
 	results := make(chan R, resultsSize)
 	go func() {
 		state := newOnceState(results)
-		defer state.Done()
 		tasks.Process(
 			func(task func() R) {
 				state.Add(1)
@@ -37,6 +36,7 @@ func Batch[R any](queue C.Queue, resultsSize int, tasks generator.Generator[func
 				}
 			},
 		)
+		state.Done()
 	}()
 	return results
 }
