@@ -22,7 +22,7 @@ type Pool struct {
 
 func NewPool(factories []C.WorkerFactory, opts ...PoolOption) C.Pool {
 	if len(factories) == 0 {
-		panic("factories cant be blank")
+		panic("factories cant be empty")
 	}
 	pool := &Pool{
 		workers:      make([]C.BaseWorker, len(factories)),
