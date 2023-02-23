@@ -9,7 +9,7 @@ import (
 type (
 	waiter struct {
 		rLock bool
-		await chan struct{}
+		mtx   *sync.Mutex
 	}
 
 	RWMutex struct {
@@ -29,9 +29,9 @@ func (m *RWMutex) Lock() {
 		m.mtx.Unlock()
 		return
 	}
-	await := m.awaitWaiter(false)
+	mtx := m.createWaiter(false)
 	m.mtx.Unlock()
-	<-await
+	mtx.Lock()
 }
 
 func (m *RWMutex) RLock() {
@@ -41,9 +41,9 @@ func (m *RWMutex) RLock() {
 		m.mtx.Unlock()
 		return
 	}
-	await := m.awaitWaiter(true)
+	mtx := m.createWaiter(true)
 	m.mtx.Unlock()
-	<-await
+	mtx.Lock()
 }
 
 func (m *RWMutex) Unlock() {
@@ -88,13 +88,13 @@ func (m *RWMutex) RUnlockToLock() {
 		m.mtx.Unlock()
 		return
 	}
-	await := m.awaitPriorityLockWaiter()
+	mtx := m.createPriorityLockWaiter()
 	m.locks--
 	if m.locks == 0 {
 		m.notifyWaiters()
 	}
 	m.mtx.Unlock()
-	<-await
+	mtx.Lock()
 }
 
 func (m *RWMutex) notifyWaiters() {
@@ -120,29 +120,31 @@ func (m *RWMutex) notifyWaiters() {
 	}
 }
 
-func (m *RWMutex) awaitWaiter(rLock bool) <-chan struct{} {
+func (m *RWMutex) createWaiter(rLock bool) *sync.Mutex {
 	waiter := waiter{
 		rLock: rLock,
-		await: make(chan struct{}),
+		mtx:   new(sync.Mutex),
 	}
 	if m.pivot == nil {
 		m.pivot = m.waiters.PushBack(waiter)
 	} else {
 		m.waiters.PushBack(waiter)
 	}
-	return waiter.await
+	waiter.mtx.Lock()
+	return waiter.mtx
 }
 
-func (m *RWMutex) awaitPriorityLockWaiter() <-chan struct{} {
+func (m *RWMutex) createPriorityLockWaiter() *sync.Mutex {
 	waiter := waiter{
-		await: make(chan struct{}),
+		mtx: new(sync.Mutex),
 	}
 	if m.pivot == nil {
 		m.waiters.PushBack(waiter)
 	} else {
 		m.waiters.InsertBefore(waiter, m.pivot)
 	}
-	return waiter.await
+	waiter.mtx.Lock()
+	return waiter.mtx
 }
 
 func (m *RWMutex) releaseWaiter(waiterElement *list.Element[waiter]) {
@@ -150,5 +152,5 @@ func (m *RWMutex) releaseWaiter(waiterElement *list.Element[waiter]) {
 		m.pivot = waiterElement.Next()
 	}
 	m.waiters.Remove(waiterElement)
-	close(waiterElement.Value.await)
+	waiterElement.Value.mtx.Unlock()
 }

@@ -1,6 +1,10 @@
 package pool
 
-import C "github.com/shtorm-7/workerpool/constant"
+import (
+	"sync"
+
+	C "github.com/shtorm-7/workerpool/constant"
+)
 
 type (
 	StartHandler func(workers []C.BaseWorker)
@@ -20,19 +24,27 @@ func SequentialStop(workers []C.BaseWorker) {
 }
 
 func ParallelStart(workers []C.BaseWorker) {
+	var wg sync.WaitGroup
+	wg.Add(len(workers))
 	for _, worker := range workers {
-		go worker.Start()
+		worker := worker
+		go func() {
+			worker.Start()
+			wg.Done()
+		}()
 	}
-	for _, worker := range workers {
-		<-worker.Status().Await(C.Started)
-	}
+	wg.Wait()
 }
 
 func ParallelStop(workers []C.BaseWorker) {
+	var wg sync.WaitGroup
+	wg.Add(len(workers))
 	for _, worker := range workers {
-		go worker.Stop()
+		worker := worker
+		go func() {
+			worker.Stop()
+			wg.Done()
+		}()
 	}
-	for _, worker := range workers {
-		<-worker.Status().Await(C.Stopped)
-	}
+	wg.Wait()
 }
