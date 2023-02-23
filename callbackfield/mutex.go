@@ -48,17 +48,16 @@ func (m *RWMutex) RLock() {
 
 func (m *RWMutex) Unlock() {
 	m.mtx.Lock()
-	defer m.mtx.Unlock()
 	if m.locks != -1 {
 		panic("Unlock of unlocked mutex")
 	}
 	m.locks = 0
 	m.notifyWaiters()
+	m.mtx.Unlock()
 }
 
 func (m *RWMutex) RUnlock() {
 	m.mtx.Lock()
-	defer m.mtx.Unlock()
 	if m.locks < 1 {
 		panic("RUnlock of unlocked mutex")
 	}
@@ -66,16 +65,17 @@ func (m *RWMutex) RUnlock() {
 	if m.locks == 0 {
 		m.notifyWaiters()
 	}
+	m.mtx.Unlock()
 }
 
 func (m *RWMutex) UnlockToRLock() {
 	m.mtx.Lock()
-	defer m.mtx.Unlock()
 	if m.locks != -1 {
 		panic("Unlock of unlocked mutex")
 	}
 	m.locks = 1
 	m.notifyWaiters()
+	m.mtx.Unlock()
 }
 
 func (m *RWMutex) RUnlockToLock() {
