@@ -134,7 +134,8 @@ func main() {
 		10,
 	)
 	wp.Start()
-	chain := tools.NewChain(
+	results := make(chan tools.ChainResult[string], 10)
+	go tools.NewChain(
 		tools.NewLink[string](
 			queue,
 			func(value string) (string, error) {
@@ -142,10 +143,11 @@ func main() {
 				return value, nil
 			},
 		),
+	).Batch(
+		generator.Range([]string{"first value", "second value"}),
+		results,
 	)
-	for chainResult := range chain.Batch(
-		10, generator.Range([]string{"first value", "second value"}),
-	) {
+	for chainResult := range results {
 		fmt.Println(chainResult.Result)
 	}
 	wp.Stop()
@@ -183,7 +185,8 @@ func main() {
 		},
 	)
 	wp.Start()
-	chain := tools.NewChain(
+	results := make(chan tools.ChainResult[string], 10)
+	go tools.NewChain(
 		tools.AddLink(
 			tools.NewLink[string](queue1,
 				func(value int) (int, error) {
@@ -196,10 +199,11 @@ func main() {
 				return fmt.Sprintf("result: %d", value), nil
 			},
 		),
+	).Batch(
+		generator.SequenceRange(0, 10),
+		results,
 	)
-	for chainResult := range chain.Batch(
-		10, generator.SequenceRange(0, 10),
-	) {
+	for chainResult := range results {
 		fmt.Println(chainResult.Result)
 	}
 	wp.Stop()

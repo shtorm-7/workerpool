@@ -8,12 +8,10 @@ import (
 
 func Await(queue C.Queue, task func()) <-chan struct{} {
 	await := make(chan struct{})
-	go func() {
-		queue <- func() {
-			task()
-			close(await)
-		}
-	}()
+	queue <- func() {
+		task()
+		close(await)
+	}
 	return await
 }
 

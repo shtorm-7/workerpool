@@ -56,65 +56,55 @@ func AddLink[CFR, CV, V, PR, R any](previousLink *Link[CFR, CV, V, PR], queue C.
 
 func (ch *Chain[FR, V]) Await(value V) <-chan struct{} {
 	await := make(chan struct{})
-	go func() {
-		ch.rootHandler(
-			value,
-			func(FR, error) {
-				close(await)
-			},
-		)
-	}()
+	ch.rootHandler(
+		value,
+		func(FR, error) {
+			close(await)
+		},
+	)
 	return await
 }
 
 func (ch *Chain[FR, V]) Future(value V) <-chan ChainResult[FR] {
 	result := make(chan ChainResult[FR])
-	go func() {
-		ch.rootHandler(
-			value,
-			func(finalResult FR, err error) {
-				result <- ChainResult[FR]{finalResult, err}
-			},
-		)
-	}()
+	ch.rootHandler(
+		value,
+		func(finalResult FR, err error) {
+			result <- ChainResult[FR]{finalResult, err}
+		},
+	)
 	return result
 }
 
 func (ch *Chain[FR, V]) AwaitBatch(values generator.Generator[V]) <-chan struct{} {
 	await := make(chan struct{})
-	go func() {
-		state := newOnceState(await)
-		finalResultHandler := func(FR, error) {
-			state.Done()
-		}
-		values.Process(
-			func(value V) {
-				state.Add(1)
-				ch.rootHandler(value, finalResultHandler)
-			},
-		)
+	state := newOnceState(await)
+	finalResultHandler := func(FR, error) {
 		state.Done()
-	}()
+	}
+	values.Process(
+		func(value V) {
+			state.Add(1)
+			ch.rootHandler(value, finalResultHandler)
+		},
+	)
+	state.Done()
 	return await
 }
 
-func (ch *Chain[FR, V]) Batch(resultsSize int, values generator.Generator[V]) <-chan ChainResult[FR] {
-	results := make(chan ChainResult[FR], resultsSize)
-	go func() {
-		state := newOnceState(results)
-		finalResultHandler := func(finalResult FR, err error) {
-			results <- ChainResult[FR]{finalResult, err}
-			state.Done()
-		}
-		values.Process(
-			func(value V) {
-				state.Add(1)
-				ch.rootHandler(value, finalResultHandler)
-			},
-		)
+func (ch *Chain[FR, V]) Batch(values generator.Generator[V], results chan ChainResult[FR]) {
+	state := newOnceState(results)
+	finalResultHandler := func(finalResult FR, err error) {
+		results <- ChainResult[FR]{finalResult, err}
 		state.Done()
-	}()
-	return results
+	}
+	values.Process(
+		func(value V) {
+			state.Add(1)
+			ch.rootHandler(value, finalResultHandler)
+		},
+	)
+	state.Done()
 }
 
 func (link *Link[CFR, CV, V, R]) linkingHandler() LinkingHandler[CFR, V] {

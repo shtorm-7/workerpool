@@ -8,12 +8,10 @@ import (
 
 func Future[R any](queue C.Queue, task func() R) <-chan R {
 	result := make(chan R)
-	go func() {
-		queue <- func() {
-			result <- task()
-			close(result)
-		}
-	}()
+	queue <- func() {
+		result <- task()
+		close(result)
+	}
 	return result
 }
 
