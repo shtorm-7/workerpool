@@ -145,7 +145,7 @@ func main() {
 		),
 	).Batch(
 		generator.Range([]string{"first value", "second value"}),
-		results,
+		chainResults,
 	)
 	for chainResult := range chainResults {
 		fmt.Println(chainResult.Result)
@@ -201,7 +201,7 @@ func main() {
 		),
 	).Batch(
 		generator.SequenceRange(0, 10),
-		results,
+		chainResults,
 	)
 	for chainResult := range chainResults {
 		fmt.Println(chainResult.Result)
